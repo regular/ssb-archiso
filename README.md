@@ -16,7 +16,7 @@ Installation
 ```
 git clone https://github.com/regular/ssb-archiso.git
 cd ssb-archiso
-lin -s $(pwd)/buildfs.sh /usr/bin/ssb-archiso
+sudo ln -s $(pwd)/buildfs.sh /usr/bin/ssb-archiso
 ```
 
 Usage
