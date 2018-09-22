@@ -92,10 +92,37 @@ make_datapart () {
       fi
     done
     popd
+    if [ -n populate-datapart ]; then
+      echo "Populating data partition"
+      populate-datapart "${tmp}"
+    fi
     sudo umount "${tmp}"
     rm -rf "${tmp}"
 
     datapart_uuid=$(sudo blkid -s UUID -o value "${datapart_img}")
+
+    if [ -n fix-permissions ]; then
+      sudo cp "${datapart_img}" root
+      sudo cp config root/
+      cat - > >(sudo tee root/fix-perms.sh) <<EOF
+set -eux
+
+function cleanup {
+  umount datapart || true
+  rm -rf datapart || true
+}
+
+trap cleanup EXIT
+
+mkdir datapart
+mount datapart.img datapart
+source config
+fix-permissions datapart
+EOF
+      sudo -E arch-chroot root bash fix-perms.sh
+      sudo mv root/datapart.img "${datapart_img}"
+      sudo rm root/config
+    fi
   fi
 }
 
@@ -212,6 +239,7 @@ copy_efi_files
 
 make_initcpio
 make_datapart "$root"
+
 sudo mksquashfs "$root" "build/rootfs.sfs" -noappend -comp xz
 if (( $encrypt_root_fs )); then
   makeLUKSContainer "build/luks.img" "build/rootfs.sfs"
