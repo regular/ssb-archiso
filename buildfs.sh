@@ -102,26 +102,27 @@ make_datapart () {
     datapart_uuid=$(sudo blkid -s UUID -o value "${datapart_img}")
 
     if [ -n fix-permissions ]; then
-      sudo cp "${datapart_img}" root
-      sudo cp config root/
-      cat - > >(sudo tee root/fix-perms.sh) <<EOF
+      sudo cp "${datapart_img}" "${root}"
+      sudo cp config "${root}"
+      cat - > >(sudo tee "${root}/fix-perms.sh") <<EOF
 set -eux
 
 function cleanup {
-  umount datapart || true
-  rm -rf datapart || true
+  umount datapart
+  rm -rf datapart
 }
-
-trap cleanup EXIT
 
 mkdir datapart
 mount datapart.img datapart
+trap cleanup EXIT
+
 source config
 fix-permissions datapart
+sync
 EOF
-      sudo -E arch-chroot root bash fix-perms.sh
-      sudo mv root/datapart.img "${datapart_img}"
-      sudo rm root/config
+      sudo -E arch-chroot "${root}" bash fix-perms.sh
+      sudo mv "${root}/datapart.img" "${datapart_img}"
+      sudo rm "${root}/config"
     fi
   fi
 }
